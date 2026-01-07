@@ -10,6 +10,14 @@ This container is a dedicated server for the [StarRupture](https://starrupture-g
 - Once you are done in the MANAGE SERVER, hit ESC to get back to the game menu, and then click JOIN GAME.
 - Enter your public (WAN) IP and enter the password you set in the SERVER MANAGER.
 
+## Note
+The container now has the `DSSettings.txt` added.
+Read about what it is, so that you can change it to match your preferences/session name: [Starrupture Unofficial Wiki](https://starrupture.just4dns.co.uk/dedicated-server/configuration)\
+
+- When starting the server it will copy the `DSSettings.txt` to `/starrupture/server` if it does not already exist.
+- This is the same location as `StarRuptureServerEOS.exe`.
+- If `DSSettings.txt` already exists in `/starrupture/server`, it will not copy and thus overwrite the file.
+
 ## Docker Compose (docker-compose.yml)
 
 ```yml

@@ -14,6 +14,7 @@ ENV TZ=UTC \
     GAME_PORT=7777
 
 COPY start.sh /start.sh
+COPY DSSettings.txt /DSSettings.txt
 ADD --chmod=755 https://dl.winehq.org/wine-builds/winehq.key /etc/apt/keyrings/winehq-archive.key
 ADD https://dl.winehq.org/wine-builds/debian/dists/trixie/winehq-trixie.sources /etc/apt/sources.list.d/winehq-trixie.sources
 RUN set -eux && mkdir -p /starrupture/server /starrupture/data && chmod +x /start.sh && groupadd -g 1000 steam || true && useradd -u 1000 -g 1000 -ms /bin/bash steam || true && \
