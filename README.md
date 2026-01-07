@@ -12,7 +12,7 @@ This container is a dedicated server for the [StarRupture](https://starrupture-g
 
 ## Note
 The container now has the `DSSettings.txt` added.
-Read about what it is, so that you can change it to match your preferences/session name: [Starrupture Unofficial Wiki](https://starrupture.just4dns.co.uk/dedicated-server/configuration)\
+Read about what it is, so that you can change it to match your preferences/session name: [Starrupture Unofficial Wiki](https://starrupture.just4dns.co.uk/dedicated-server/configuration)
 
 - When starting the server it will copy the `DSSettings.txt` to `/starrupture/server` if it does not already exist.
 - This is the same location as `StarRuptureServerEOS.exe`.
