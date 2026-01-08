@@ -4,9 +4,8 @@
 
 This container is a dedicated server for the [StarRupture](https://starrupture-game.com/) game.
 - Run the container and once it is up, in the game menu go to MANAGE SERVER enter your public (WAN) IP and set a password.
-- Click on NEW GAME, and give it a name (It does not seem to like spaces in the "Session Name").
+- Click on NEW GAME, and give it a name (It does not like spaces in the "Session Name").
 - Then click START GAME. (Sometimes, altho it seems a bit inconsistent, after a minute it may pop up a message saying the game is running.)
-- If your container has restarted for whatever reason, you will have to go into the MANAGE SERVER again, and click LOAD GAME to get it running again.
 - Once you are done in the MANAGE SERVER, hit ESC to get back to the game menu, and then click JOIN GAME.
 - Enter your public (WAN) IP and enter the password you set in the SERVER MANAGER.
 
