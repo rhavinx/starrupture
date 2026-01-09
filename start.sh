@@ -37,7 +37,7 @@ dpkg-reconfigure -f noninteractive tzdata 2>&1
 term_handler() {
 	echo -e "${INFO}Shutting down Server${NC}"
 
-	PID=$(pgrep -f "^${serverhome}/StarRupture/Binaries/Win64/StarRuptureServerEOS.exe")
+	PID=$(pgrep -f "^${serverhome}${binary}")
 	if [[ -z $PID ]]; then
 		echo -e "${WARN}Could not find StarRupture pid. Assuming server is dead...${NC}"
 	else
@@ -98,7 +98,7 @@ args=()
 args+=("-port=${GAME_PORT}")
 
 echo -e "${HILITE}-> Launching StarRupture Dedicated Server Binary${NC}"
-gosu steam:steam wine64 "${serverhome}/StarRupture/Binaries/Win64/StarRuptureServerEOS.exe" "${args[@]}" 2>&1 &
+gosu steam:steam wine64 "${serverhome}${binary}" "${args[@]}" 2>&1 &
 
 # Gets the PID of the last command
 ServerPID=$!
