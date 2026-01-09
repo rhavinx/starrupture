@@ -12,8 +12,11 @@ data=/starrupture/data
 appid=3809400
 
 # Relative to $serverhome
-binary=/StarRupture/Binaries/Win64/StarRuptureServerEOS.exe
-pdb=/StarRupture/Binaries/Win64/StarRuptureServerEOS.pdb
+# SteamDB Patch list shows the binaries are now this, but in reality it's still the previous files. Not sure why.
+#binary=/StarRupture/Binaries/Win64/StarRuptureServerEOS.exe
+#pdb=/StarRupture/Binaries/Win64/StarRuptureServerEOS.pdb
+binary=/StarRupture/Binaries/Win64/StarRuptureServerEOS-Win64-Shipping.exe
+pdb=/StarRupture/Binaries/Win64/StarRuptureServerEOS-Win64-Shipping.pdb
 
 TZ="${TZ:-UTC}"
 PUID="${PUID:-1000}"
