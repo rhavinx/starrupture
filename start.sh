@@ -12,8 +12,8 @@ data=/starrupture/data
 appid=3809400
 
 # Relative to $serverhome
-binary=/StarRupture/Binaries/Win64/StarRuptureServerEOS-Win64-Shipping.exe
-pdb=/StarRupture/Binaries/Win64/StarRuptureServerEOS-Win64-Shipping.pdb
+binary=/StarRupture/Binaries/Win64/StarRuptureServerEOS.exe
+pdb=/StarRupture/Binaries/Win64/StarRuptureServerEOS.pdb
 
 TZ="${TZ:-UTC}"
 PUID="${PUID:-1000}"
@@ -69,7 +69,7 @@ if [[ ! -f "${serverhome}/DSSettings.txt" ]]; then
 	until [ -f ${serverhome}${binary} ]; do
         	echo -e "${HILITE}:: Attempt #${attempt} to install server files...${NC}"
 	        install_server
-	        (( attempt++ )) || true
+	        (( attempt++ ))
 	done
 elif [[ "${SKIP_UPDATE}" == "0" ]]; then # DSSettings.txt exists, so we can try update the server, if allowed to.
         install_server
