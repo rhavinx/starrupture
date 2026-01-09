@@ -17,6 +17,14 @@ Read about what it is, so that you can change it to match your preferences/sessi
 - This is the same location as `StarRuptureServerEOS.exe`.
 - If `DSSettings.txt` already exists in `/starrupture/server`, it will not copy and thus overwrite the file.
 
+## Important!
+With the changes to the upstream dedicated server, if you are already using this container and you `docker pull` or `docker compose pull` the update.\
+SteamCMD might get stuck in a loop downloading or verifying the server files.\
+If this happens, in the `server` folder, delete all the files EXCEPT for `DSSettings.txt`, `Password.json` and `PlayerPassword.json` and then run the container again and it will succeed.
+- If you have accidentally deleted your `.json` files, you can either not load the save automatically from the `DSSettings.txt` file and recreate the password via the MANAGE SERVER`.
+- Or you can go read the information on [Starrupture Unofficial Wiki](https://starrupture.just4dns.co.uk/dedicated-server/configuration) on how to do so.
+- In the section on the wiki, they point to this site to regen passwords: [StarRupture Password Encryptor](https://starrupture-utilities.com/passwords/)
+
 ## Docker Compose (docker-compose.yml)
 
 ```yml
