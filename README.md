@@ -12,8 +12,7 @@ Docker container for hosting a dedicated server for [StarRupture](https://starru
 1. Launch StarRupture.
 2. Go to **MANAGE SERVER**:
    - Enter the server IP:
-     - **WAN/Public IP** for players connecting from the internet
-     - **LAN IP** for players on your local network
+     - **WAN/Public IP**
    - Set the admin password (or set it via `docker-compose.yml`, see below).
 3. Click **NEW GAME** and set a session name  
    - Note: the game can be picky about spaces in the **Session Name**.
