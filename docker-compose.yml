@@ -4,15 +4,13 @@ services:
     container_name: starrupture
     environment:
       TZ: "UTC"
-      PUID: "1000"
-      PGID: "1000"
       SKIP_UPDATE: "0" # Updates are ON by default; set to "1" only if you want to skip
       ENABLE_LOG: "1"
       GAME_PORT: "7777"
     volumes:
-      - /path/to/server:/starrupture/server
-      - /path/to/data:/starrupture/data
-      - /path/to/data:/starrupture/server/StarRupture/Saved
+      - /path/to/server:/home/steam/starrupture/server
+      - /path/to/data:/home/steam/starrupture/data
+      - /path/to/data:/home/steam/starrupture/server/StarRupture/Saved
     ports:
       - "7777:7777/udp"
       - "7777:7777/tcp"
