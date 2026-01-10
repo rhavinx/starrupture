@@ -49,19 +49,13 @@ RUN set -x \
 FROM build_stage AS trixie-root
 WORKDIR ${STEAMCMDDIR}
 
-# FROM trixie-root AS trixie
-# # Switch to user
-# USER ${USER}
-
 # Intermediate for winehq repo key
 FROM trixie-root AS winehqkey
-#RUN apt-get update -y && apt-get install gpg -y
 WORKDIR /tmp
 ADD --chmod=755 https://dl.winehq.org/wine-builds/winehq.key /tmp/winehq.key
 RUN gpg --dearmor -o /winehq-archive.key /tmp/winehq.key
 
 # Actual Image
-#FROM steamcmd/steamcmd:debian-13
 FROM trixie-root AS main
 
 LABEL org.opencontainers.image.authors="RhavinX"
