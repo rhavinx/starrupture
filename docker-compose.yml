@@ -4,12 +4,19 @@ services:
     container_name: starrupture
     environment:
       TZ: "UTC"
-      SKIP_UPDATE: "0" # Updates are ON by default; set to "1" only if you want to skip
+      SKIP_UPDATE: "0"
       ENABLE_LOG: "1"
       GAME_PORT: "7777"
+      # ADMIN_PASSWORD: ""
+      # PLAYER_PASSWORD: ""
+      # FORCE_CHANGE_ADMIN: "0"
+      # FORCE_CHANGE_PLAYER: "0"
+      # REMOVE_SERVER_FILES: "0"
+      # BACKUP_SETTINGS: "1"
     volumes:
       - /path/to/server:/home/steam/starrupture/server
       - /path/to/data:/home/steam/starrupture/data
+      # Optional: store saves inside your data folder:
       - /path/to/data:/home/steam/starrupture/server/StarRupture/Saved
     ports:
       - "7777:7777/udp"

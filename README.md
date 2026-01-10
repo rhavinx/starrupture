@@ -1,31 +1,97 @@
-# StarRupture Dedicated Server
+# StarRupture Dedicated Server (Docker)
 
-## Info
+## Description
+Docker container for hosting a dedicated server for [StarRupture](https://starrupture-game.com/).
 
-This container is a dedicated server for the [StarRupture](https://starrupture-game.com/) game.
-- Run the container and once it is up, in the game menu go to MANAGE SERVER enter your public (WAN) IP and set a password.
-- Click on NEW GAME, and give it a name (It does not like spaces in the "Session Name").
-- Then click START GAME. (Sometimes, altho it seems a bit inconsistent, after a minute it may pop up a message saying the game is running.)
-- Once you are done in the MANAGE SERVER, hit ESC to get back to the game menu, and then click JOIN GAME.
-- Enter your public (WAN) IP and enter the password you set in the SERVER MANAGER.
+## Quick start (Docker)
+1. Create a `docker-compose.yml` file from the example below.
+2. Start the container using `docker compose up -d` and then monitor the output using `docker compose logs -f`.
+3. Forward ports on your router/firewall if hosting for players outside your LAN (see `GAME_PORT`).
 
-## Note
-The container now has the `DSSettings.txt` added.
-Read about what it is, so that you can change it to match your preferences/session name: [Starrupture Unofficial Wiki](https://starrupture.just4dns.co.uk/dedicated-server/configuration)
+## In-game setup
+1. Launch StarRupture.
+2. Go to **MANAGE SERVER**:
+   - Enter the server IP:
+     - **WAN/Public IP** for players connecting from the internet
+     - **LAN IP** for players on your local network
+   - Set the admin password (or set it via `docker-compose.yml`, see below).
+3. Click **NEW GAME** and set a session name  
+   - Note: the game can be picky about spaces in the **Session Name**.
+4. Click **START GAME**.
+5. Press **ESC** back to the main menu → **JOIN GAME**.
+6. Enter the server IP again and the player password (if set).  
+   - Note: the game does not support hostnames yet.
 
-- When starting the server it will copy the `DSSettings.txt` to `/starrupture/server` if it does not already exist.
-- This is the same location as `StarRuptureServerEOS.exe`.
-- If `DSSettings.txt` already exists in `/starrupture/server`, it will not copy and thus overwrite the file.
+## Admin & player passwords (optional)
+You can set admin and/or player passwords using environment variables in `docker-compose.yml`.
 
-## Important!
-With the changes to the upstream dedicated server, if you are already using this container and you `docker pull` or `docker compose pull` the update.\
-SteamCMD might get stuck in a loop downloading or verifying the server files.\
-If this happens, in the `server` folder, delete all the files EXCEPT for `DSSettings.txt`, `Password.json` and `PlayerPassword.json` and then run the container again and it will succeed.
-- If you have accidentally deleted your `.json` files, you can either not load the save automatically from the `DSSettings.txt` file and recreate the password via the MANAGE SERVER`.
-- Or you can go read the information on [Starrupture Unofficial Wiki](https://starrupture.just4dns.co.uk/dedicated-server/configuration) on how to do so.
-- In the section on the wiki, they point to this site to regen passwords: [StarRupture Password Encryptor](https://starrupture-utilities.com/passwords/)
+- On first run, provided the variables `ADMIN_PASSWORD` and/or `PLAYER_PASSWORD` are set, the container will create:
+  - `Password.json` (admin)
+  - `PlayerPassword.json` (players)
+- The password variables are only used to *create these files* unless you force a change. You can remove the variables once your files exist.
+- To change passwords for an existing setup:
+  - Set `ADMIN_PASSWORD` and/or `PLAYER_PASSWORD`
+  - Set the corresponding `FORCE_CHANGE_ADMIN=1` and/or `FORCE_CHANGE_PLAYER=1`, or delete the corresponding json files.
+  - After the files are updated, remove the `ADMIN_PASSWORD` and `PLAYER_PASSWORD` variables, along with the `FORCE_CHANGE_*` variables.
+
+This feature requires internet access (it calls AlienX’s password API at https://starrupture-utilities.com/).
+
+## DSSettings.txt
+This container includes `DSSettings.txt`. Read about it here:
+[StarRupture Unofficial Wiki](https://starrupture.just4dns.co.uk/dedicated-server/configuration)
+
+- On startup, the container copies `DSSettings.txt` into `/home/steam/starrupture/server` **only if it does not already exist**.
+
+## Important! 🚨 (volume paths changed)
+Internal container paths for volume mounts changed.
+
+If you were previously mounting paths like:
+- `/starrupture/...`
+
+They must now be:
+- `/home/steam/starrupture/...`
+
+So update your `docker-compose.yml` accordingly.
+
+### If SteamCMD gets stuck after updating
+If you pull an updated image and SteamCMD loops downloading/verifying the server files, down the container, then:
+
+**Option A (recommended):** temporary wipe/reinstall via env var  
+- Set `REMOVE_SERVER_FILES=1` in the `docker-compose.yml` for *one* launch
+- Then set it back to `0` (unless you enjoy reinstalling the server files every time)
+
+Your settings files (`DSSettings.txt`, `Password.json`, `PlayerPassword.json`) are backed up into your data folder and restored after the wipe.
+
+**Option B (manual):** delete server files except settings  
+In the `server` folder, delete everything **except**:
+- `DSSettings.txt`
+- `Password.json`
+- `PlayerPassword.json`
+
+Then start the container again.
+
+If you deleted the `Password*.json` password files:
+- Recreate them via **MANAGE SERVER**, or
+- Recreate them using the environment variables `ADMIN_PASSWORD`, `PLAYER_PASSWORD` + `FORCE_CHANGE_*` in `docker-compose.yml`.
 
 ## Docker Compose (docker-compose.yml)
+
+### Environment variables
+| Variable             | Description | Default |
+| :------------------- | :---------- | :-----: |
+| TZ                   | Timezone | "UTC" |
+| PUID                 | Numeric user id | "1000" |
+| PGID                 | Numeric group id | "1000" |
+| SKIP_UPDATE          | Skip updating server files | "0" |
+| ENABLE_LOG           | Enable server logging | "1" |
+| GAME_PORT            | Game port (adjust port mapping if needed) | "7777" |
+| REMOVE_PDB           | Remove large debug symbol file (`.pdb` > 2GB) | "1" |
+| ADMIN_PASSWORD       | Admin/server manager password (first run, or when forced) | "" |
+| PLAYER_PASSWORD      | Player join password (first run, or when forced) | "" |
+| FORCE_CHANGE_ADMIN   | Force admin password update (`ADMIN_PASSWORD` required) | "0" |
+| FORCE_CHANGE_PLAYER  | Force player password update (`PLAYER_PASSWORD` required) | "0" |
+| REMOVE_SERVER_FILES  | Wipe server files to recover from update issues | "0" |
+| BACKUP_SETTINGS      | Backup `DSSettings.txt`, `Password.json`, `PlayerPassword.json` on shutdown | "1" |
 
 ```yml
 services:
@@ -33,16 +99,21 @@ services:
     image: rhavinx/starrupture:latest
     container_name: starrupture
     environment:
-      TZ: "Country/City"
-      PUID: "1000"
-      PGID: "1000"
-      SKIP_UPDATE: "0" # Updates are ON by default; set to "1" only if you want to skip
+      TZ: "UTC"
+      SKIP_UPDATE: "0"
       ENABLE_LOG: "1"
       GAME_PORT: "7777"
+      # ADMIN_PASSWORD: ""
+      # PLAYER_PASSWORD: ""
+      # FORCE_CHANGE_ADMIN: "0"
+      # FORCE_CHANGE_PLAYER: "0"
+      # REMOVE_SERVER_FILES: "0"
+      # BACKUP_SETTINGS: "1"
     volumes:
-      - /path/to/server:/starrupture/server
-      - /path/to/data:/starrupture/data
-      - /path/to/data:/starrupture/server/StarRupture/Saved
+      - /path/to/server:/home/steam/starrupture/server
+      - /path/to/data:/home/steam/starrupture/data
+      # Optional: store saves inside your data folder:
+      - /path/to/data:/home/steam/starrupture/server/StarRupture/Saved
     ports:
       - "7777:7777/udp"
       - "7777:7777/tcp"
@@ -50,15 +121,22 @@ services:
 ```
 
 ## Directory Structure
-
-```
 .
 ├── data
 │   ├── Config
 │   ├── Logs
-│   └── SaveGames <--- Your Saves will go here.
+│   ├── server-settings-backup   # Backups of DSSettings.txt and password files
+│   └── SaveGames                # Saves (when using the optional Saved volume mapping)
 └── server
     ├── Engine
     ├── StarRupture
     └── steamapps
-```
+
+## Changelog
+
+* 10 Jan 2026:
+  - Changed base container from official SteamCMD to a custom image
+  - Added support for creating/changing Password.json and PlayerPassword.json via AlienX’s API
+  - Added option to remove server files if SteamCMD fails to update
+  - Added server settings backup on shutdown (enabled by default)
+  - Improved script output
