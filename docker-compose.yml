@@ -3,7 +3,7 @@ services:
     image: rhavinx/starrupture:latest
     container_name: starrupture
     environment:
-      TZ: "Country/City"
+      TZ: "UTC"
       PUID: "1000"
       PGID: "1000"
       SKIP_UPDATE: "0" # Updates are ON by default; set to "1" only if you want to skip
