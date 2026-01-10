@@ -121,6 +121,7 @@ services:
 ```
 
 ## Directory Structure
+```
 .
 ├── data
 │   ├── Config
@@ -131,7 +132,7 @@ services:
     ├── Engine
     ├── StarRupture
     └── steamapps
-
+```
 ## Changelog
 
 * 10 Jan 2026:
