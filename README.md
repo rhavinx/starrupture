@@ -135,6 +135,9 @@ services:
 ```
 ## Changelog
 
+* 17 Jan 2026:
+  - Adjust backup script to copy backups to timestamped directory so that previous files don't get overwritten.
+
 * 10 Jan 2026:
   - Changed base container from official SteamCMD to a custom image
   - Added support for creating/changing Password.json and PlayerPassword.json via AlienX’s API
