@@ -63,6 +63,7 @@ LABEL org.opencontainers.image.source="https://github.com/RhavinX/starrupture"
 LABEL org.opencontainers.image.description="StarRupture Dedicated Server"
 
 ENV SERVERHOME="${HOMEDIR}/starrupture/server"
+ENV SAVEDGAMES="${SERVERHOME}/StarRupture/Saved"
 ENV GAMEDATA="${HOMEDIR}/starrupture/data"
 ENV SETTINGSBACKUP="${GAMEDATA}/server-settings-backup"
 
@@ -76,7 +77,7 @@ COPY restore_server_settings.sh /restore_server_settings.sh
 COPY remove_server_files.sh /remove_server_files.sh
 
 ADD https://dl.winehq.org/wine-builds/debian/dists/trixie/winehq-trixie.sources /etc/apt/sources.list.d/winehq-trixie.sources
-RUN dpkg --add-architecture i386 && mkdir -p ${SERVERHOME} ${GAMEDATA} ${SETTINGSBACKUP} && chmod +x /start.sh && \
+RUN dpkg --add-architecture i386 && mkdir -p ${SAVEDGAMES} ${GAMEDATA} ${SETTINGSBACKUP} && chmod +x /start.sh && \
     chown -R steam:steam ${SERVERHOME} && \
     chown -R steam:steam ${GAMEDATA} && \
     apt-get update && apt-get upgrade -y && \
@@ -89,7 +90,7 @@ RUN dpkg --add-architecture i386 && mkdir -p ${SERVERHOME} ${GAMEDATA} ${SETTING
     && apt-get clean -y && apt-get autopurge -y && \
     rm -rf /var/lib/apt/lists/*
 
-VOLUME [${SERVERHOME}, ${GAMEDATA}]
+VOLUME [${SERVERHOME}, ${GAMEDATA}, ${SAVEDGAMES}]
 
 EXPOSE 7777/udp
 EXPOSE 7777/tcp
