@@ -201,7 +201,7 @@ if [ -e /tmp/.X0-lock ]; then
    rm -f /tmp/.X0-lock 2>&1
 fi
 
-gosu steam:steam wine64 winecfg
+gosu steam:steam wine winecfg
 sleep 5
 Xvfb :0 -screen 0 1280x1024x24 -nolisten tcp &
 export DISPLAY=:0.0
@@ -212,7 +212,7 @@ args=()
 args+=("-port=${GAME_PORT}")
 
 echo -e "${INFO}Launching StarRupture Dedicated Server Binary${NC}"
-gosu steam:steam wine64 "${SERVERHOME}/${binary}" "${args[@]}" 2>&1 &
+gosu steam:steam wine "${SERVERHOME}/${binary}" "${args[@]}" 2>&1 &
 
 # Gets the PID of the last command
 ServerPID=$!
