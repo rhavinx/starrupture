@@ -13,6 +13,7 @@ ENV STEAMCMDDIR="${HOMEDIR}/steamcmd"
 RUN set -x \
 	# Install, update & upgrade packages
 	&& apt-get update \
+    && apt-get upgrade -y \
 	&& apt-get install -y --no-install-recommends --no-install-suggests \
 		lib32stdc++6 \
 		lib32gcc-s1 \
@@ -55,8 +56,20 @@ WORKDIR /tmp
 ADD --chmod=755 https://dl.winehq.org/wine-builds/winehq.key /tmp/winehq.key
 RUN gpg --dearmor -o /winehq-archive.key /tmp/winehq.key
 
-# Actual Image
-FROM trixie-root AS main
+# Intermediate for Wine installation
+FROM trixie-root AS trixie-wine
+# Copy the key from the winehq stage
+COPY --from=winehqkey /winehq-archive.key /etc/apt/keyrings/winehq-archive.key
+ADD https://dl.winehq.org/wine-builds/debian/dists/trixie/winehq-trixie.sources /etc/apt/sources.list.d/winehq-trixie.sources
+RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y --no-install-recommends \
+    xdg-user-dirs \
+    winehq-stable \
+    xvfb \
+    winbind \
+    && apt-get clean -y && apt-get autopurge -y && rm -rf /var/lib/apt/lists/*
+
+# Actual Image - rebuilds are faster as wine is cached
+FROM trixie-wine AS main
 
 LABEL org.opencontainers.image.authors="RhavinX"
 LABEL org.opencontainers.image.source="https://github.com/RhavinX/starrupture"
@@ -67,26 +80,16 @@ ENV SAVEDGAMES="${SERVERHOME}/StarRupture/Saved"
 ENV GAMEDATA="${HOMEDIR}/starrupture/data"
 ENV SETTINGSBACKUP="${GAMEDATA}/server-settings-backup"
 
-# Copy the key from the initial stage
-COPY --from=winehqkey /winehq-archive.key /etc/apt/keyrings/winehq-archive.key
-
 COPY start.sh /start.sh
 COPY DSSettings.txt /DSSettings.txt
 COPY backup_server_settings.sh /backup_server_settings.sh
 COPY restore_server_settings.sh /restore_server_settings.sh
 COPY remove_server_files.sh /remove_server_files.sh
 
-ADD https://dl.winehq.org/wine-builds/debian/dists/trixie/winehq-trixie.sources /etc/apt/sources.list.d/winehq-trixie.sources
-RUN dpkg --add-architecture i386 && mkdir -p ${SAVEDGAMES} ${GAMEDATA} ${SETTINGSBACKUP} && chmod +x /start.sh && \
+RUN mkdir -p ${SAVEDGAMES} ${GAMEDATA} ${SETTINGSBACKUP} && chmod +x /start.sh && \
     chown -R steam:steam ${SERVERHOME} && \
     chown -R steam:steam ${GAMEDATA} && \
-    apt-get update && apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends \
-    jq \
-    xdg-user-dirs \
-    winehq-stable \
-    xvfb \
-    winbind \
+    apt-get update && apt-get install -y --no-install-recommends jq \
     && apt-get clean -y && apt-get autopurge -y && \
     rm -rf /var/lib/apt/lists/*
 
