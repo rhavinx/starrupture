@@ -104,6 +104,10 @@ term_handler() {
 	wineserver -k
 	sleep 1
 	copy_files_to_data
+	if [[ "${BACKUP_SETTINGS}" == "1" ]]; then
+		snapshot_server_files
+	fi
+	echo -e "${INFO}Shutdown complete.${NC}"
 	exit
 }
 
