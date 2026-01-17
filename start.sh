@@ -50,10 +50,6 @@ fi
 chown -R steam:steam "${SERVERHOME}"
 chown -R steam:steam "${GAMEDATA}"
 
-chmod +x /backup_server_settings.sh
-chmod +x /restore_server_settings.sh
-chmod +x /remove_server_files.sh
-
 settings=$(cat<<EOF
 
 ${HILITE}Please see the README for this container at: https://github.com/RhavinX/starrupture/blob/main/README.md${NC}
