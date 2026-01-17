@@ -1,16 +1,17 @@
 #!/bin/bash
 
-appid=3809400
+APPID=3809400
 
-# Relative to $serverhome
-binary=StarRupture/Binaries/Win64/StarRuptureServerEOS-Win64-Shipping.exe
-pdb=StarRupture/Binaries/Win64/StarRuptureServerEOS-Win64-Shipping.pdb
+# Relative to $SERVERHOME
+BINARY=StarRupture/Binaries/Win64/StarRuptureServerEOS-Win64-Shipping.exe
+PDB=StarRupture/Binaries/Win64/StarRuptureServerEOS-Win64-Shipping.pdb
 
 OK='✅: \033[1;92m'        # bright green
 INFO='➡️: \033[1;94m'      # bright blue
 WARN='⚠️: \033[1;93m'      # bright yellow
 ERR='❌: \033[1;91m' # bright red
 HILITE='👉: \033[38;5;208m' # orange
+HILITENOE='\033[38;5;208m' # orange
 NC='\033[0m' # Reset
 
 TZ="${TZ:-UTC}"
@@ -61,9 +62,9 @@ ${WARN}!! IMPORTANT !!${NC}
 ${WARN}Internal paths have changed for this container. You will need to update your volume binds in your docker-compose.yml as follows:${NC}
 
 volumes:
-      - /path/to/server:${HILITE}/home/steam${NC}/starrupture/server
-      - /path/to/data:${HILITE}/home/steam${NC}/starrupture/data
-      - ${HILITE}/path/to/data/Saved{$NC}:${HILITE}/home/steam[$NC}/starrupture/server/StarRupture4/Saved ${INFO}# Optional: store saves inside your data folder, otherwise use a separate volume for saves${NC}
+      - /path/to/server:${HILITENOE}/home/steam${NC}/starrupture/server
+      - /path/to/data:${HILITENOE}/home/steam${NC}/starrupture/data
+	  ${WARN}# Bind mount for saves is no longer necessary as saves are copied to data folder automatically.${NC}
 
 Container Settings:
 -----------------
@@ -76,8 +77,7 @@ Container Settings:
  BACKUP_SETTINGS:         $(if [[ "${BACKUP_SETTINGS}" == "0" ]]; then echo -e "${WARN}0 WARNING: Server settings and saves will not be backed up on shutdown.${NC}"; else echo -e "${INFO}1${NC}"; fi)
  SERVERHOME:              ${INFO}${SERVERHOME}${NC}
  GAMEDATA:                ${INFO}${GAMEDATA}${NC}
- SAVEDGAMES:              ${INFO}${SAVEDGAMES}${NC}
-
+ 
 Server Settings:
 ----------------
  ENABLE_LOG:              ${INFO}${ENABLE_LOG}${NC}
@@ -93,10 +93,12 @@ echo "${TZ}" > /etc/timezone 2>&1
 ln -snf "/usr/share/zoneinfo/${TZ}" /etc/localtime 2>&1
 dpkg-reconfigure -f noninteractive tzdata 2>&1
 
+### FUNCTIONS ###
+
 term_handler() {
 	echo -e "${INFO}Shutting down Server${NC}"
 
-	PID=$(pgrep -f "^${SERVERHOME}/${binary}")
+	PID=$(pgrep -f "^${SERVERHOME}/${BINARY}")
 	if [[ -z $PID ]]; then
 		echo -e "${WARN}Could not find StarRupture pid. Assuming server is dead...${NC}"
 	else
@@ -105,9 +107,7 @@ term_handler() {
 	fi
 	wineserver -k
 	sleep 1
-	if [[ "${BACKUP_SETTINGS}" == "1" ]]; then
-		gosu steam:steam /bin/bash /backup_server_settings.sh
-	fi
+	copy_files_to_data
 	exit
 }
 
@@ -115,7 +115,7 @@ trap 'term_handler' SIGTERM
 
 install_server() {
 	echo -e "${INFO}-> Installing / updating StarRupture dedicated server files in ${SERVERHOME}${NC}"
-	gosu steam:steam ./steamcmd.sh +@sSteamCmdForcePlatformType windows +force_install_dir ${SERVERHOME} +login anonymous +app_update ${appid} validate +quit
+	gosu steam:steam ./steamcmd.sh +@sSteamCmdForcePlatformType windows +force_install_dir ${SERVERHOME} +login anonymous +app_update ${APPID} validate +quit
 }
 
 set_password_files() {
@@ -125,77 +125,149 @@ set_password_files() {
 	local adminpassword_encrypted=$(echo "${json}" | jq -r '.adminpassword')
 	local playerpassword_encrypted=$(echo "${json}" | jq -r '.playerpassword')
 	if [[ -n "${adminpassword_encrypted}" ]]; then
-		jq -cn --arg password "${adminpassword_encrypted}" '$ARGS.named' > "${SERVERHOME}/Password.json"
-		chown steam:steam "${SERVERHOME}/Password.json"
+		jq -cn --arg password "${adminpassword_encrypted}" '$ARGS.named' > "${GAMEDATA}/Password.json"
+		chown steam:steam "${GAMEDATA}/Password.json"
 		echo -e "${OK}Admin: Password.json file created.${NC}";
 	else echo -e "${WARN}Admin password is empty, not creating Password.json file.${NC}";
 	fi
 	if [[ -n "${playerpassword_encrypted}" ]]; then
-		jq -cn --arg password "${playerpassword_encrypted}" '$ARGS.named' > "${SERVERHOME}/PlayerPassword.json"
+		jq -cn --arg password "${playerpassword_encrypted}" '$ARGS.named' > "${GAMEDATA}/PlayerPassword.json"
 		echo -e "${OK}Game: PlayerPassword.json file created.${NC}";
-		chown steam:steam "${SERVERHOME}/PlayerPassword.json"
+		chown steam:steam "${GAMEDATA}/PlayerPassword.json"
 	else echo -e "${WARN}Player password is empty, not creating PlayerPassword.json file.${NC}";
 	fi
 }
 
+copy_files_to_data() {
+	echo -e "${INFO}Updating files in data folder...${NC}"
+	for dir in Config Logs SaveGames; do
+		if [[ -d "${SERVERHOME}/StarRupture/Saved/${dir}" ]]; then
+			mkdir -p "${GAMEDATA}/${dir}"
+			echo -e "${INFO}Copying ${dir}...${NC}"
+			cp -a "${SERVERHOME}/StarRupture/Saved/${dir}/*" "${GAMEDATA}/${dir}"
+		fi
+	done
+	if [[ -f "${SERVERHOME}/Password.json" ]]; then
+		echo -e "${INFO}Copying Password.json...${NC}"
+		cp -a "${SERVERHOME}/Password.json" "${GAMEDATA}/Password.json"
+	fi
+	if [[ -f "${SERVERHOME}/PlayerPassword.json" ]]; then
+		echo -e "${INFO}Copying PlayerPassword.json...${NC}"
+		cp -a "${SERVERHOME}/PlayerPassword.json" "${GAMEDATA}/PlayerPassword.json"
+	fi
+}
+
+copy_files_to_server() {
+	echo -e "${INFO}Restoring files from data folder...${NC}"
+	for dir in Config Logs SaveGames; do
+		if [[ -d "${GAMEDATA}/${dir}" ]]; then
+			mkdir -p "${SERVERHOME}/StarRupture/Saved/${dir}"
+			echo -e "${INFO}Restoring ${dir}...${NC}"
+			cp -a "${GAMEDATA}/${dir}/*" "${SERVERHOME}/StarRupture/Saved/${dir}/"
+		fi
+	done
+	if [[ -f "${GAMEDATA}/Password.json" ]]; then
+		echo -e "${INFO}Restoring Password.json...${NC}"
+		cp -a "${GAMEDATA}/Password.json" "${SERVERHOME}/Password.json"
+	fi
+	if [[ -f "${GAMEDATA}/PlayerPassword.json" ]]; then
+		echo -e "${INFO}Restoring PlayerPassword.json...${NC}"
+		cp -a "${GAMEDATA}/PlayerPassword.json" "${SERVERHOME}/PlayerPassword.json"
+	fi
+}
+
+snapshot_server_files() {
+	local DATE=$(date +"%Y%m%d-%H%M%S")
+    local BACKUPDIR=${BACKUP}/${DATE}
+	echo -e "${INFO}Creating snapshot of current server files in ${BACKUPDIR}...${NC}"
+	if [[ ! -d "${BACKUPDIR}" ]]; then
+		mkdir -p "${BACKUPDIR}"
+	fi
+	for dir in Config Logs SaveGames; do
+		if [[ -d "${SERVERHOME}/StarRupture/Saved/${dir}" ]]; then
+			mkdir -p "${$BACKUPDIR}/${dir}"
+			echo -e "${INFO}Copying ${dir}...${NC}"
+			cp -a "${SERVERHOME}/StarRupture/Saved/${dir}/*" "${BACKUPDIR}/${dir}"
+		fi
+	done
+
+	if [[ -f "${SERVERHOME}/Password.json" ]]; then
+		echo -e "${INFO}Copying Password.json...${NC}"
+		cp -a "${SERVERHOME}/Password.json" "${BACKUPDIR}/Password.json"
+	fi
+	if [[ -f "${SERVERHOME}/PlayerPassword.json" ]]; then
+		echo -e "${INFO}Copying PlayerPassword.json...${NC}"
+		cp -a "${SERVERHOME}/PlayerPassword.json" "${BACKUPDIR}/PlayerPassword.json"
+	fi
+}
+
+remove_server_files() {
+	echo -e "${INFO}Removing server files from ${SERVERHOME}...${NC}"
+	if [[ -d ${SERVERHOME}/StarRupture ]]; then
+		rm -rf ${SERVERHOME}/*
+		echo -e "${OK}Server files removed.${NC}"
+	else
+		echo -e "${ERR}Did not remove server files. Please manually empty the directory.${NC}"
+	fi
+}
+
+### MAIN ###
+
 firstrun=1
 echo -e "${INFO}Starting StarRupture Dedicated Server...${NC}"
 
-if [[ -f ${SERVERHOME}/DSSettings.txt ]]; then
+if [[ -f "${SERVERHOME}/DSSettings.txt" ]]; then
 	firstrun=0
 fi
 
 if [[ "${REMOVE_SERVER_FILES}" == "1" ]] && [[ $firstrun -eq 0 ]]; then # Will not execute if first run
 	echo -e "${WARN}!{$NC}"
-	echo -e "${WARN}!{$NC}"
-	echo -e "${WARN}!{$NC}"
 	echo -e "${WARN}Removing existing server files (REMOVE_SERVER_FILES is 1)...${NC}"
 	echo -e "${WARN}!{$NC}"
-	echo -e "${WARN}!{$NC}"
-	echo -e "${WARN}!{$NC}"
-	gosu steam:steam /bin/bash /backup_server_settings.sh
-	/bin/bash /remove_server_files.sh
-	gosu steam:steam /bin/bash /restore_server_settings.sh
+	snapshot_server_files
+	remove_server_files
 fi
 
 if [[ $firstrun -eq 1 ]]; then
-	echo -e "${HILITE}First Run, copying DSSettings.txt for later editing.${NC}"
-	cp /DSSettings.txt "${SERVERHOME}/DSSettings.txt"
-	chown steam:steam "${SERVERHOME}/DSSettings.txt"
-
-	# SteamCMD is being weird lately and will not install the app on first run.
-	# This takes care of initial installation and should retry on failures until the server binary exists
-	attempt=1
-	until [[ -f "${SERVERHOME}/${binary}" ]]; do
-        	echo -e "${HILITE}Attempt #${attempt} to install server files...${NC}"
-	        install_server
-	        (( attempt++ ))
-	done
-
-	# Create the password files
-	if [[ -n "${ADMIN_PASSWORD}" ]] || [[ -n "${PLAYER_PASSWORD}" ]]; then
-		echo -e "${INFO}Creating password files...${NC}"
-		set_password_files "${ADMIN_PASSWORD}" "${PLAYER_PASSWORD}"
-	else echo -e "${WARN}No admin or player password set, remember to manually set passwords using the in-game server manager!${NC}"
+	if [[ -e "${GAMEDATA}/DSSettings.txt" ]]; then
+	  echo -e "${INFO}First run detected, found DSSettings.txt in data folder, copying to server...${NC}"
+	  cp "${GAMEDATA}/DSSettings.txt" "${SERVERHOME}/DSSettings.txt"
+	else 
+		echo -e "${HILITE}First run detected, copying fresh DSSettings.txt for later editing.${NC}"
+		cp /DSSettings.txt "${SERVERHOME}/DSSettings.txt"
 	fi
+	echo -e "${INFO}Remember to down the server and adjust DSSettings.txt after creating your game!${NC}"
+	chown steam:steam "${SERVERHOME}/DSSettings.txt"
+fi
 
-elif [[ "${SKIP_UPDATE}" == "0" ]] || [[ ! -f "${SERVERHOME}/${binary}" ]]; then # DSSettings.txt exists or the binary doesn't exist, so we can try update if not skipping, or install the server
-		echo -e "${INFO}Updating server files (SKIP_UPDATE is 0)...${NC}"
-        install_server
+if [[ "${SKIP_UPDATE}" == "0" ]] || [[ ! -f "${SERVERHOME}/${BINARY}" ]]; then # Only install / update if SKIP_UPDATE is 0 or binary is missing
+		echo -e "${INFO}Updating or installing server files...${NC}"
+        attempt=1
+		until [[ -f "${SERVERHOME}/${BINARY}" ]]; do
+				echo -e "${HILITE}Attempt #${attempt} to install/update server files...${NC}"
+				install_server
+				(( attempt++ ))
+		done
 fi
 
 if [[ "${REMOVE_PDB}" == "1" ]]; then # PDB debug symbol file is >2gb, let's recover that space
-	if [[ -f "${SERVERHOME}/${pdb}" ]]; then
+	if [[ -f "${SERVERHOME}/${PDB}" ]]; then
 		echo -e "${INFO}Removing extremely large debug symbol file...${NC}"
-		rm -f "${SERVERHOME}/${pdb}"
+		rm -f "${SERVERHOME}/${PDB}"
 	fi
 fi
 
 # Grouping: (adminpassword set AND (force change set OR Password.json missing)) OR (playerpassword set AND (force change set OR PlayerPassword.json missing))
-if ( [[ -n "${ADMIN_PASSWORD}" ]] && ([[ "${FORCE_ADMIN_CHANGE}" == "1" ]] || [[ ! -f "${SERVERHOME}/Password.json" ]]) ) || ( [[ -n "${PLAYER_PASSWORD}" ]] && ( [[ "${FORCE_PLAYER_CHANGE}" == "1" ]] || [[ ! -f "${SERVERHOME}/PlayerPassword.json" ]] ) ); then
+if ( [[ -n "${ADMIN_PASSWORD}" ]] && ([[ "${FORCE_ADMIN_CHANGE}" == "1" ]] || [[ ! -f "${GAMEDATA}/Password.json" ]]) ) || ( [[ -n "${PLAYER_PASSWORD}" ]] && ( [[ "${FORCE_PLAYER_CHANGE}" == "1" ]] || [[ ! -f "${GAMEDATA}/PlayerPassword.json" ]] ) ); then
 	echo -e "${HILITE}Admin or Player password set, but Password.json or PlayerPassword.json file missing OR Force Change requested, setting passwords...${NC}"
 	set_password_files "${ADMIN_PASSWORD}" "${PLAYER_PASSWORD}"
 fi
+
+copy_files_to_server
+
+echo -e "${INFO}Server Public IP Address:${NC} ${HILITE}$(curl -s https://api.ipify.org)${NC}"
+
+echo -e "${WARN}Ensure you are forwarding port ${GAME_PORT}/UDP on your router/firewall!${NC}"
 
 echo -e "${INFO}Initializing Wine...${NC}"
 if [[ -e /tmp/.X0-lock ]]; then
@@ -213,7 +285,7 @@ args=()
 args+=("-port=${GAME_PORT}")
 
 echo -e "${INFO}Launching StarRupture Dedicated Server Binary${NC}"
-gosu steam:steam wine "${SERVERHOME}/${binary}" "${args[@]}" 2>&1 &
+gosu steam:steam wine "${SERVERHOME}/${BINARY}" "${args[@]}" 2>&1 &
 
 # Gets the PID of the last command
 ServerPID=$!

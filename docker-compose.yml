@@ -13,11 +13,9 @@ services:
       # FORCE_CHANGE_PLAYER: "0"
       # REMOVE_SERVER_FILES: "0"
       # BACKUP_SETTINGS: "1"
-    volumes:
+    volumes: # Internal Volume Paths have changed. Removed saves mount.
       - /path/to/server:/home/steam/starrupture/server
       - /path/to/data:/home/steam/starrupture/data
-      # Optional: store saves inside your data folder, otherwise use a separate volume folder for saves, for eg /path/to/Saved:/home/steam/starrupture/server/StarRupture/Saved
-      - /path/to/data/Saved:/home/steam/starrupture/server/StarRupture/Saved
     ports:
       - "7777:7777/udp"
       - "7777:7777/tcp"

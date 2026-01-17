@@ -76,24 +76,20 @@ LABEL org.opencontainers.image.source="https://github.com/RhavinX/starrupture"
 LABEL org.opencontainers.image.description="StarRupture Dedicated Server"
 
 ENV SERVERHOME="${HOMEDIR}/starrupture/server"
-ENV SAVEDGAMES="${SERVERHOME}/StarRupture/Saved"
 ENV GAMEDATA="${HOMEDIR}/starrupture/data"
-ENV SETTINGSBACKUP="${GAMEDATA}/server-settings-backup"
+ENV BACKUP="${GAMEDATA}/backup"
 
 COPY start.sh /start.sh
 COPY DSSettings.txt /DSSettings.txt
-COPY backup_server_settings.sh /backup_server_settings.sh
-COPY restore_server_settings.sh /restore_server_settings.sh
-COPY remove_server_files.sh /remove_server_files.sh
 
-RUN mkdir -p ${SAVEDGAMES} ${GAMEDATA} ${SETTINGSBACKUP} && chmod +x /start.sh && \
+RUN mkdir -p ${SERVERHOME} ${GAMEDATA} ${BACKUP} && chmod +x /start.sh && \
     chown -R steam:steam ${SERVERHOME} && \
     chown -R steam:steam ${GAMEDATA} && \
     apt-get update && apt-get install -y --no-install-recommends jq \
     && apt-get clean -y && apt-get autopurge -y && \
     rm -rf /var/lib/apt/lists/*
 
-VOLUME [${SERVERHOME}, ${GAMEDATA}, ${SAVEDGAMES}]
+VOLUME [${SERVERHOME}, ${GAMEDATA}]
 
 EXPOSE 7777/udp
 EXPOSE 7777/tcp
