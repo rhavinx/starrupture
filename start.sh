@@ -94,12 +94,12 @@ dpkg-reconfigure -f noninteractive tzdata 2>&1
 term_handler() {
 	echo -e "${INFO}Shutting down Server${NC}"
 
-	PID=$(pgrep -f "^${SERVERHOME}/${BINARY}")
+	PID=$(pgrep -f "${SERVERHOME}/${BINARY}")
 	if [[ -z $PID ]]; then
 		echo -e "${WARN}Could not find StarRupture pid. Assuming server is dead...${NC}"
 	else
-		kill -n 15 "$PID"
-		wait "$PID"
+		kill -n 15 $PID
+		wait $PID
 	fi
 	wineserver -k
 	sleep 1
@@ -140,9 +140,13 @@ copy_files_to_data() {
 		if [[ -d "${SERVERHOME}/StarRupture/Saved/${dir}" ]]; then
 			mkdir -p "${GAMEDATA}/${dir}"
 			echo -e "${INFO}Copying ${dir}...${NC}"
-			cp -a "${SERVERHOME}/StarRupture/Saved/${dir}/*" "${GAMEDATA}/${dir}"
+			cp -a "${SERVERHOME}/StarRupture/Saved/${dir}" "${GAMEDATA}"
 		fi
 	done
+	if [[ -f "${SERVERHOME}/DSSettings.txt" ]]; then
+		echo -e "${INFO}Copying DSSettings.txt...${NC}"
+		cp -a "${SERVERHOME}/DSSettings.txt" "${GAMEDATA}/DSSettings.txt"
+	fi
 	if [[ -f "${SERVERHOME}/Password.json" ]]; then
 		echo -e "${INFO}Copying Password.json...${NC}"
 		cp -a "${SERVERHOME}/Password.json" "${GAMEDATA}/Password.json"
@@ -159,9 +163,13 @@ copy_files_to_server() {
 		if [[ -d "${GAMEDATA}/${dir}" ]]; then
 			mkdir -p "${SERVERHOME}/StarRupture/Saved/${dir}"
 			echo -e "${INFO}Restoring ${dir}...${NC}"
-			cp -a "${GAMEDATA}/${dir}/*" "${SERVERHOME}/StarRupture/Saved/${dir}/"
+			cp -a "${GAMEDATA}/${dir}" "${SERVERHOME}/StarRupture/Saved"
 		fi
 	done
+	if [[ -f "${GAMEDATA}/DSSettings.txt" ]]; then
+		echo -e "${INFO}Restoring DSSettings.txt...${NC}"
+		cp -a "${GAMEDATA}/DSSettings.txt" "${SERVERHOME}/DSSettings.txt"
+	fi
 	if [[ -f "${GAMEDATA}/Password.json" ]]; then
 		echo -e "${INFO}Restoring Password.json...${NC}"
 		cp -a "${GAMEDATA}/Password.json" "${SERVERHOME}/Password.json"
@@ -282,7 +290,6 @@ args+=("-port=${GAME_PORT}")
 
 echo -e "${INFO}Launching StarRupture Dedicated Server Binary${NC}"
 gosu steam:steam wine "${SERVERHOME}/${BINARY}" "${args[@]}" 2>&1 &
-
 # Gets the PID of the last command
 ServerPID=$!
 wait $ServerPID
