@@ -58,14 +58,12 @@ settings=$(cat<<EOF
 ${HILITE}Please see the README for this container at: https://github.com/RhavinX/starrupture/blob/main/README.md${NC}
 
 ${WARN}!! IMPORTANT !!${NC}
-${WARN}!! IMPORTANT !!${NC}
-${WARN}!! IMPORTANT !!${NC}
 ${WARN}Internal paths have changed for this container. You will need to update your volume binds in your docker-compose.yml as follows:${NC}
 
 volumes:
-      - /path/to/server:/home/steam/starrupture/server
-      - /path/to/data:/home/steam/starrupture/data
-      - /path/to/data:/home/steam/starrupture/server/StarRupture/Saved
+      - /path/to/server:${HILITE}/home/steam${NC}/starrupture/server
+      - /path/to/data:${HILITE}/home/steam${NC}/starrupture/data
+      - ${HILITE}/path/to/data/Saved{$NC}:${HILITE}/home/steam[$NC}/starrupture/server/StarRupture4/Saved ${INFO}# Optional: store saves inside your data folder, otherwise use a separate volume for saves${NC}
 
 Container Settings:
 -----------------
@@ -75,14 +73,17 @@ Container Settings:
  SKIP_UPDATE:             $(if [[ "${SKIP_UPDATE}" == "1" ]]; then echo -e "${WARN}1 WARNING: Server files will not update${NC}"; else echo -e "${INFO}0${NC}"; fi)
  REMOVE_PDB:              $(if [[ "${REMOVE_PDB}" == "0" ]]; then echo -e "${WARN}0 WARNING: PDB file is +2gb and is not necessary unless you need to debug the server binary.${NC}"; else echo -e "${INFO}1${NC}"; fi)
  REMOVE_SERVER_FILES:     $(if [[ "${REMOVE_SERVER_FILES}" == "1" ]]; then echo -e "${WARN}1${NC} ${HILITE}!! UNSET FOR NEXT LAUNCH !!${NC}"; else echo -e "${INFO}0${NC}"; fi)
- BACKUP_SETTINGS:         $(if [[ "${BACKUP_SETTINGS}" == "0" ]]; then echo -e "${WARN}0 WARNING: Server settings will not be backed up on shutdown.${NC}"; else echo -e "${INFO}1${NC}"; fi)
+ BACKUP_SETTINGS:         $(if [[ "${BACKUP_SETTINGS}" == "0" ]]; then echo -e "${WARN}0 WARNING: Server settings and saves will not be backed up on shutdown.${NC}"; else echo -e "${INFO}1${NC}"; fi)
+ SERVERHOME:              ${INFO}${SERVERHOME}${NC}
+ GAMEDATA:                ${INFO}${GAMEDATA}${NC}
+ SAVEDGAMES:              ${INFO}${SAVEDGAMES}${NC}
 
 Server Settings:
 ----------------
  ENABLE_LOG:              ${INFO}${ENABLE_LOG}${NC}
  GAME_PORT:               ${INFO}${GAME_PORT}${NC}
- ADMIN_PASSWORD:          $(if [ -n "${ADMIN_PASSWORD}" ]; then echo -e "${HILITE}SET${NC}"; else echo -e "${INFO}NOT SET${NC}"; fi) $(if [[ "${FORCE_ADMIN_CHANGE}" == "1" ]]; then echo -e "${WARN}FORCED_ADMIN_CHANGE: 1${NC}"; fi)
- PLAYER_PASSWORD:         $(if [ -n "${PLAYER_PASSWORD}" ]; then echo -e "${HILITE}SET${NC}"; else echo -e "${INFO}NOT SET${NC}"; fi) $(if [[ "${FORCE_PLAYER_CHANGE}" == "1" ]]; then echo -e "${WARN}FORCE_PLAYER_CHANGE: 1${NC}"; fi)
+ ADMIN_PASSWORD:          $(if [[ -n "${ADMIN_PASSWORD}" ]]; then echo -e "${HILITE}SET${NC}"; else echo -e "${INFO}NOT SET${NC}"; fi) $(if [[ "${FORCE_ADMIN_CHANGE}" == "1" ]]; then echo -e "${WARN}FORCED_ADMIN_CHANGE: 1${NC}"; fi)
+ PLAYER_PASSWORD:         $(if [[ -n "${PLAYER_PASSWORD}" ]]; then echo -e "${HILITE}SET${NC}"; else echo -e "${INFO}NOT SET${NC}"; fi) $(if [[ "${FORCE_PLAYER_CHANGE}" == "1" ]]; then echo -e "${WARN}FORCE_PLAYER_CHANGE: 1${NC}"; fi)
 
 EOF
 )
@@ -123,16 +124,16 @@ set_password_files() {
 	local json=$(curl -s 'https://starrupture-utilities.com/passwords/' -X POST --data-raw "adminpassword=${adminpassword}&playerpassword=${playerpassword}")
 	local adminpassword_encrypted=$(echo "${json}" | jq -r '.adminpassword')
 	local playerpassword_encrypted=$(echo "${json}" | jq -r '.playerpassword')
-	if [ -n "${adminpassword_encrypted}" ]; then
-		jq -cn --arg password "${adminpassword_encrypted}" '$ARGS.named' > ${SERVERHOME}/Password.json
-		chown steam:steam ${SERVERHOME}/Password.json
+	if [[ -n "${adminpassword_encrypted}" ]]; then
+		jq -cn --arg password "${adminpassword_encrypted}" '$ARGS.named' > "${SERVERHOME}/Password.json"
+		chown steam:steam "${SERVERHOME}/Password.json"
 		echo -e "${OK}Admin: Password.json file created.${NC}";
 	else echo -e "${WARN}Admin password is empty, not creating Password.json file.${NC}";
 	fi
-	if [ -n "${playerpassword_encrypted}" ]; then
-		jq -cn --arg password "${playerpassword_encrypted}" '$ARGS.named' > ${SERVERHOME}/PlayerPassword.json
+	if [[ -n "${playerpassword_encrypted}" ]]; then
+		jq -cn --arg password "${playerpassword_encrypted}" '$ARGS.named' > "${SERVERHOME}/PlayerPassword.json"
 		echo -e "${OK}Game: PlayerPassword.json file created.${NC}";
-		chown steam:steam ${SERVERHOME}/PlayerPassword.json
+		chown steam:steam "${SERVERHOME}/PlayerPassword.json"
 	else echo -e "${WARN}Player password is empty, not creating PlayerPassword.json file.${NC}";
 	fi
 }
@@ -140,11 +141,11 @@ set_password_files() {
 firstrun=1
 echo -e "${INFO}Starting StarRupture Dedicated Server...${NC}"
 
-if [ -f ${SERVERHOME}/DSSettings.txt ]; then
+if [[ -f ${SERVERHOME}/DSSettings.txt ]]; then
 	firstrun=0
 fi
 
-if [[ "${REMOVE_SERVER_FILES}" == "1" ]] && [ $firstrun -eq 0 ]; then # Will not execute if first run
+if [[ "${REMOVE_SERVER_FILES}" == "1" ]] && [[ $firstrun -eq 0 ]]; then # Will not execute if first run
 	echo -e "${WARN}!{$NC}"
 	echo -e "${WARN}!{$NC}"
 	echo -e "${WARN}!{$NC}"
@@ -157,47 +158,47 @@ if [[ "${REMOVE_SERVER_FILES}" == "1" ]] && [ $firstrun -eq 0 ]; then # Will not
 	gosu steam:steam /bin/bash /restore_server_settings.sh
 fi
 
-if [ $firstrun -eq 1 ]; then
+if [[ $firstrun -eq 1 ]]; then
 	echo -e "${HILITE}First Run, copying DSSettings.txt for later editing.${NC}"
-	cp /DSSettings.txt "${SERVERHOME}"/DSSettings.txt
+	cp /DSSettings.txt "${SERVERHOME}/DSSettings.txt"
 	chown steam:steam "${SERVERHOME}/DSSettings.txt"
 
 	# SteamCMD is being weird lately and will not install the app on first run.
 	# This takes care of initial installation and should retry on failures until the server binary exists
 	attempt=1
-	until [ -f ${SERVERHOME}/${binary} ]; do
+	until [[ -f "${SERVERHOME}/${binary}" ]]; do
         	echo -e "${HILITE}Attempt #${attempt} to install server files...${NC}"
 	        install_server
 	        (( attempt++ ))
 	done
 
 	# Create the password files
-	if [ -n "${ADMIN_PASSWORD}" ] || [ -n "${PLAYER_PASSWORD}" ]; then
+	if [[ -n "${ADMIN_PASSWORD}" ]] || [[ -n "${PLAYER_PASSWORD}" ]]; then
 		echo -e "${INFO}Creating password files...${NC}"
 		set_password_files "${ADMIN_PASSWORD}" "${PLAYER_PASSWORD}"
 	else echo -e "${WARN}No admin or player password set, remember to manually set passwords using the in-game server manager!${NC}"
 	fi
 
-elif [[ "${SKIP_UPDATE}" == "0" ]] || [ ! -f ${SERVERHOME}/${binary} ]; then # DSSettings.txt exists or the binary doesn't exist, so we can try update if not skipping, or install the server
+elif [[ "${SKIP_UPDATE}" == "0" ]] || [[ ! -f "${SERVERHOME}/${binary}" ]]; then # DSSettings.txt exists or the binary doesn't exist, so we can try update if not skipping, or install the server
 		echo -e "${INFO}Updating server files (SKIP_UPDATE is 0)...${NC}"
         install_server
 fi
 
 if [[ "${REMOVE_PDB}" == "1" ]]; then # PDB debug symbol file is >2gb, let's recover that space
-	if [ -f ${SERVERHOME}/${pdb} ]; then
+	if [[ -f "${SERVERHOME}/${pdb}" ]]; then
 		echo -e "${INFO}Removing extremely large debug symbol file...${NC}"
-		rm -f ${SERVERHOME}/${pdb}
+		rm -f "${SERVERHOME}/${pdb}"
 	fi
 fi
 
 # Grouping: (adminpassword set AND (force change set OR Password.json missing)) OR (playerpassword set AND (force change set OR PlayerPassword.json missing))
-if ( [ -n "${ADMIN_PASSWORD}" ] && ([[ "${FORCE_ADMIN_CHANGE}" == "1" ]] || [ ! -f ${SERVERHOME}/Password.json ]) ) || ( [ -n "${PLAYER_PASSWORD}" ] && ( [[ "${FORCE_PLAYER_CHANGE}" == "1" ]] || [ ! -f ${SERVERHOME}/PlayerPassword.json ]) ); then
+if ( [[ -n "${ADMIN_PASSWORD}" ]] && ([[ "${FORCE_ADMIN_CHANGE}" == "1" ]] || [[ ! -f "${SERVERHOME}/Password.json" ]]) ) || ( [[ -n "${PLAYER_PASSWORD}" ]] && ( [[ "${FORCE_PLAYER_CHANGE}" == "1" ]] || [[ ! -f "${SERVERHOME}/PlayerPassword.json" ]] ) ); then
 	echo -e "${HILITE}Admin or Player password set, but Password.json or PlayerPassword.json file missing OR Force Change requested, setting passwords...${NC}"
 	set_password_files "${ADMIN_PASSWORD}" "${PLAYER_PASSWORD}"
 fi
 
 echo -e "${INFO}Initializing Wine...${NC}"
-if [ -e /tmp/.X0-lock ]; then
+if [[ -e /tmp/.X0-lock ]]; then
    rm -f /tmp/.X0-lock 2>&1
 fi
 
