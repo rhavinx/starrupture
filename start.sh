@@ -50,7 +50,7 @@ chown -R steam:steam "${GAMEDATA}"
 
 settings=$(cat<<EOF
 
-${HILITE}Please see the README for this container at: https://github.com/RhavinX/starrupture/blob/main/README.md${NC}
+${HILITE}Please see the README for this container at: https://github.com/rhavinx/starrupture/blob/main/README.md${NC}
 
 ${WARN}!! IMPORTANT !!${NC}
 ${WARN}Internal paths have changed for this container. You will need to update your volume binds in your docker-compose.yml as follows:${NC}
