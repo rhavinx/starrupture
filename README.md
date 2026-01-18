@@ -183,6 +183,10 @@ services:
 
 ## Changelog
 
+* 18 Jan 2026:
+  - Change ownership of backup directory
+  - Re-arrange image sources
+
 * 17 Jan 2026:
   - Refactor the container structure.
   - Settings and saves now live in the data folder and will be transferred to the correct locations within the container on startup and synced back on server shutdown.

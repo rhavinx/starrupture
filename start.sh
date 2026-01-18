@@ -205,6 +205,7 @@ snapshot_server_files() {
 		echo -e "${INFO}Copying PlayerPassword.json...${NC}"
 		cp -a "${SERVERHOME}/PlayerPassword.json" "${BACKUPDIR}/PlayerPassword.json"
 	fi
+	chown -R steam:steam "${BACKUPDIR}"
 }
 
 remove_server_files() {
