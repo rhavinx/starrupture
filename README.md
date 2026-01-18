@@ -159,6 +159,7 @@ If you lost the `Password*.json` password files:
 services:
   starrupture:
     image: rhavinx/starrupture:latest
+    #image: ghcr.io/rhavinx/starrupture:latest # Alternate location
     container_name: starrupture
     environment:
       TZ: "UTC"
@@ -184,8 +185,9 @@ services:
 ## Changelog
 
 * 18 Jan 2026:
-  - Change ownership of backup directory
-  - Re-arrange image sources
+  - Change ownership of backup directory.
+  - Re-arrange image sources.
+  - Automate image build and publish to both docker and github.
 
 * 17 Jan 2026:
   - Refactor the container structure.

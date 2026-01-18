@@ -1,6 +1,7 @@
 services:
   starrupture:
     image: rhavinx/starrupture:latest
+    #image: ghcr.io/rhavinx/starrupture:latest # Alternate location
     container_name: starrupture
     environment:
       TZ: "UTC"
