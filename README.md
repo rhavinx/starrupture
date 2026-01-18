@@ -132,7 +132,7 @@ Your settings files (`DSSettings.txt`, `Password.json`, `PlayerPassword.json`) a
 In the `server` folder, delete everything. Existing settings will be copied from your data volume.
 Start the container again.
 
-If you lost the `Password*.json` password files:
+If you lost the `*Password.json` password files:
 - Recreate them via **MANAGE SERVER**, or
 - Recreate them using the environment variables `ADMIN_PASSWORD`, `PLAYER_PASSWORD` + `FORCE_CHANGE_*` in `docker-compose.yml`.
 
