@@ -187,6 +187,7 @@ services:
 * 19 Jan 2026:
   - Fixed issue with settings backup.
   - Fixed issue with server updating via steamcmd. 🤦‍♂️
+  + Fix Saved folder ownership in case it changes to root.
 
 * 18 Jan 2026:
   - Change ownership of backup directory.

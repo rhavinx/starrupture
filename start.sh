@@ -160,6 +160,7 @@ copy_files_to_data() {
 			cp "${SERVERHOME}/${file}" "${GAMEDATA}"
 		fi
 	done
+	chown -R steam:steam "${GAMEDATA}" # Just in case
 }
 
 copy_files_to_server() {
@@ -177,6 +178,7 @@ copy_files_to_server() {
 			cp "${GAMEDATA}/${file}" "${SERVERHOME}"
 		fi
 	done
+	chown -R steam:steam "${SERVERHOME}" # Just in case
 }
 
 snapshot_server_files() {
