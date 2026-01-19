@@ -10,10 +10,19 @@ on:
   schedule:
     - cron: '0 2 1 * *'
   workflow_dispatch:
+  repository_dispatch:
+    types: [steamcmd-wine-updated]
 
 jobs:
+  echo-base-update:
+    if: github.event_name == 'repository_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Echo base image update
+        run: echo "Base image steamcmd-wine has been updated, triggering rebuild of starrupture. Image ${{ github.event.client_payload.image }}Digest ${{ github.event.client_payload.digest }}"
   build-and-push:
     runs-on: ubuntu-latest
+
     steps:
       -
         name: Login to Docker Hub
