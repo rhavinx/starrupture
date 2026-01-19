@@ -3,6 +3,12 @@ name: Docker Image CI
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'Dockerfile'
+      - 'start.sh'
+      - 'DSSettings.txt'
+  schedule:
+    - cron: '0 2 1 * *'
 
 jobs:
   build:
@@ -40,13 +46,3 @@ jobs:
           tags: |
             rhavinx/starrupture:latest
             ghcr.io/rhavinx/starrupture:latest
-
-      - uses: actions/checkout@v6.0.2
-
-      - name: Update repo description
-        uses: peter-evans/dockerhub-description@v5
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: rhavinx/starrupture
-          short-description: ${{ github.event.repository.description }}

@@ -186,8 +186,9 @@ services:
 
 * 18 Jan 2026:
   - Change ownership of backup directory.
-  - Re-arrange image sources.
-  - Automate image build and publish to both docker and github.
+  - Re-arrange image sources, using teejo75/steamcmd-wine as base.
+  - Automate image build and publish to both docker and github (ghcr.io).
+  - Image will update automatically on the 1st of every month to account for security updates.
 
 * 17 Jan 2026:
   - Refactor the container structure.
