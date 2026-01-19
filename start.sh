@@ -1,10 +1,18 @@
 #!/bin/bash
 
 APPID=3809400
+GAMENAME="StarRupture"
+README_URL="https://github.com/rhavinx/starrupture/blob/main/README.md"
 
 # Relative to $SERVERHOME
 BINARY=StarRupture/Binaries/Win64/StarRuptureServerEOS-Win64-Shipping.exe
 PDB=StarRupture/Binaries/Win64/StarRuptureServerEOS-Win64-Shipping.pdb
+
+GAMEBASE=StarRupture
+GAMEBASEDIR=${GAMEBASE}/Saved
+SAVEDFOLDERS=("Config" "Logs" "SaveGames")
+SERVERFILES=("DSSettings.txt" "Password.json" "PlayerPassword.json")
+FIRSTRUNCHECKFILE="DSSettings.txt"
 
 OK='✅: \033[1;92m'        # bright green
 INFO='➡️: \033[1;94m'      # bright blue
@@ -50,7 +58,7 @@ chown -R steam:steam "${GAMEDATA}"
 
 settings=$(cat<<EOF
 
-${HILITE}Please see the README for this container at: https://github.com/rhavinx/starrupture/blob/main/README.md${NC}
+${HILITE}Please see the README for this container at: ${README_URL}${NC}
 
 ${WARN}!! IMPORTANT !!${NC}
 ${WARN}Internal paths have changed for this container. You will need to update your volume binds in your docker-compose.yml as follows:${NC}
@@ -61,7 +69,7 @@ volumes:
 	  ${WARN}# Bind mount for saves is no longer necessary as saves are copied to data folder automatically.${NC}
 
 Container Settings:
------------------
+-------------------
  TZ:                      ${INFO}${TZ}${NC}
  PUID:                    ${INFO}${PUID}${NC}
  PGID:                    ${INFO}${PGID}${NC}
@@ -90,11 +98,11 @@ dpkg-reconfigure -f noninteractive tzdata 2>&1
 ### FUNCTIONS ###
 
 term_handler() {
-	echo -e "${INFO}Shutting down Server${NC}"
+	echo -e "${INFO}Shutting down ${GAMENAME} server...${NC}"
 
 	PID=$(pgrep -f "${SERVERHOME}/${BINARY}")
 	if [[ -z $PID ]]; then
-		echo -e "${WARN}Could not find StarRupture pid. Assuming server is dead...${NC}"
+		echo -e "${WARN}Could not find ${GAMENAME} server pid. Assuming server is dead...${NC}"
 	else
 		kill -n 15 $PID
 		wait $PID
@@ -112,7 +120,7 @@ term_handler() {
 trap 'term_handler' SIGTERM
 
 install_server() {
-	echo -e "${INFO}-> Installing / updating StarRupture dedicated server files in ${SERVERHOME}${NC}"
+	echo -e "${INFO}-> Installing / updating ${GAMENAME} dedicated server files in ${SERVERHOME}${NC}"
 	gosu steam:steam ./steamcmd.sh +@sSteamCmdForcePlatformType windows +force_install_dir ${SERVERHOME} +login anonymous +app_update ${APPID} validate +quit
 }
 
@@ -138,48 +146,37 @@ set_password_files() {
 
 copy_files_to_data() {
 	echo -e "${INFO}Updating files in data folder...${NC}"
-	for dir in Config Logs SaveGames; do
-		if [[ -d "${SERVERHOME}/StarRupture/Saved/${dir}" ]]; then
+	for dir in "${SAVEDFOLDERS[@]}"; do
+		if [[ -d "${SERVERHOME}/${GAMEBASEDIR}/${dir}" ]]; then
 			mkdir -p "${GAMEDATA}/${dir}"
 			echo -e "${INFO}Copying ${dir}...${NC}"
-			cp -a "${SERVERHOME}/StarRupture/Saved/${dir}" "${GAMEDATA}"
+			cp -a "${SERVERHOME}/${GAMEBASEDIR}/${dir}" "${GAMEDATA}"
 		fi
 	done
-	if [[ -f "${SERVERHOME}/DSSettings.txt" ]]; then
-		echo -e "${INFO}Copying DSSettings.txt...${NC}"
-		cp -a "${SERVERHOME}/DSSettings.txt" "${GAMEDATA}/DSSettings.txt"
-	fi
-	if [[ -f "${SERVERHOME}/Password.json" ]]; then
-		echo -e "${INFO}Copying Password.json...${NC}"
-		cp -a "${SERVERHOME}/Password.json" "${GAMEDATA}/Password.json"
-	fi
-	if [[ -f "${SERVERHOME}/PlayerPassword.json" ]]; then
-		echo -e "${INFO}Copying PlayerPassword.json...${NC}"
-		cp -a "${SERVERHOME}/PlayerPassword.json" "${GAMEDATA}/PlayerPassword.json"
-	fi
+
+	for file in ${SERVERFILES[@]}; do
+		if [[ -f "${SERVERHOME}/${file}" ]]; then
+			echo -e "${INFO}Copying ${file}...${NC}"
+			cp "${SERVERHOME}/${file}" "${GAMEDATA}"
+		fi
+	done
 }
 
 copy_files_to_server() {
 	echo -e "${INFO}Restoring files from data folder...${NC}"
-	for dir in Config Logs SaveGames; do
+	for dir in ${SAVEDFOLDERS[@]}; do
 		if [[ -d "${GAMEDATA}/${dir}" ]]; then
-			mkdir -p "${SERVERHOME}/StarRupture/Saved/${dir}"
+			mkdir -p "${SERVERHOME}/${GAMEBASEDIR}/${dir}"
 			echo -e "${INFO}Restoring ${dir}...${NC}"
-			cp -a "${GAMEDATA}/${dir}" "${SERVERHOME}/StarRupture/Saved"
+			cp -a "${GAMEDATA}/${dir}" "${SERVERHOME}/${GAMEBASEDIR}"
 		fi
 	done
-	if [[ -f "${GAMEDATA}/DSSettings.txt" ]]; then
-		echo -e "${INFO}Restoring DSSettings.txt...${NC}"
-		cp -a "${GAMEDATA}/DSSettings.txt" "${SERVERHOME}/DSSettings.txt"
-	fi
-	if [[ -f "${GAMEDATA}/Password.json" ]]; then
-		echo -e "${INFO}Restoring Password.json...${NC}"
-		cp -a "${GAMEDATA}/Password.json" "${SERVERHOME}/Password.json"
-	fi
-	if [[ -f "${GAMEDATA}/PlayerPassword.json" ]]; then
-		echo -e "${INFO}Restoring PlayerPassword.json...${NC}"
-		cp -a "${GAMEDATA}/PlayerPassword.json" "${SERVERHOME}/PlayerPassword.json"
-	fi
+	for file in ${SERVERFILES[@]}; do
+		if [[ -f "${GAMEDATA}/${file}" ]]; then
+			echo -e "${INFO}Restoring ${file}...${NC}"
+			cp "${GAMEDATA}/${file}" "${SERVERHOME}"
+		fi
+	done
 }
 
 snapshot_server_files() {
@@ -189,28 +186,26 @@ snapshot_server_files() {
 	if [[ ! -d "${BACKUPDIR}" ]]; then
 		mkdir -p "${BACKUPDIR}"
 	fi
-	for dir in Config Logs SaveGames; do
-		if [[ -d "${SERVERHOME}/StarRupture/Saved/${dir}" ]]; then
-			mkdir -p "${$BACKUPDIR}/${dir}"
+	for dir in ${SAVEDFOLDERS[@]}; do
+		if [[ -d "${SERVERHOME}/${GAMEBASEDIR}/${dir}" ]]; then
+			mkdir -p "${BACKUPDIR}/${dir}"
 			echo -e "${INFO}Copying ${dir}...${NC}"
-			cp -a "${SERVERHOME}/StarRupture/Saved/${dir}/*" "${BACKUPDIR}/${dir}"
+			cp -a "${SERVERHOME}/${GAMEBASEDIR}/${dir}" "${BACKUPDIR}"
+		fi
+	done
+	for file in ${SERVERFILES[@]}; do
+		if [[ -f "${SERVERHOME}/${file}" ]]; then
+			echo -e "${INFO}Copying ${file}...${NC}"
+			cp "${SERVERHOME}/${file}" "${BACKUPDIR}"
 		fi
 	done
 
-	if [[ -f "${SERVERHOME}/Password.json" ]]; then
-		echo -e "${INFO}Copying Password.json...${NC}"
-		cp -a "${SERVERHOME}/Password.json" "${BACKUPDIR}/Password.json"
-	fi
-	if [[ -f "${SERVERHOME}/PlayerPassword.json" ]]; then
-		echo -e "${INFO}Copying PlayerPassword.json...${NC}"
-		cp -a "${SERVERHOME}/PlayerPassword.json" "${BACKUPDIR}/PlayerPassword.json"
-	fi
 	chown -R steam:steam "${BACKUPDIR}"
 }
 
 remove_server_files() {
 	echo -e "${INFO}Removing server files from ${SERVERHOME}...${NC}"
-	if [[ -d ${SERVERHOME}/StarRupture ]]; then
+	if [[ -d ${SERVERHOME}/${GAMEBASE} ]]; then
 		rm -rf ${SERVERHOME}/*
 		echo -e "${OK}Server files removed.${NC}"
 	else
@@ -221,9 +216,9 @@ remove_server_files() {
 ### MAIN ###
 
 firstrun=1
-echo -e "${INFO}Starting StarRupture Dedicated Server...${NC}"
+echo -e "${INFO}Starting ${GAMENAME} Dedicated Server...${NC}"
 
-if [[ -f "${SERVERHOME}/DSSettings.txt" ]]; then
+if [[ -f "${SERVERHOME}/${FIRSTRUNCHECKFILE}" ]]; then
 	firstrun=0
 fi
 
@@ -236,25 +231,29 @@ if [[ "${REMOVE_SERVER_FILES}" == "1" ]] && [[ $firstrun -eq 0 ]]; then # Will n
 fi
 
 if [[ $firstrun -eq 1 ]]; then
-	if [[ -e "${GAMEDATA}/DSSettings.txt" ]]; then
-	  echo -e "${INFO}First run detected, found DSSettings.txt in data folder, copying to server...${NC}"
-	  cp "${GAMEDATA}/DSSettings.txt" "${SERVERHOME}/DSSettings.txt"
+	if [[ -e "${GAMEDATA}/${FIRSTRUNCHECKFILE}" ]]; then
+	  echo -e "${INFO}First run detected, found ${FIRSTRUNCHECKFILE} in data folder, copying to server...${NC}"
+	  cp "${GAMEDATA}/${FIRSTRUNCHECKFILE}" "${SERVERHOME}/${FIRSTRUNCHECKFILE}"
 	else 
-		echo -e "${HILITE}First run detected, copying fresh DSSettings.txt for later editing.${NC}"
-		cp /DSSettings.txt "${SERVERHOME}/DSSettings.txt"
+		echo -e "${HILITE}First run detected, copying fresh ${FIRSTRUNCHECKFILE} for later editing.${NC}"
+		cp "/${FIRSTRUNCHECKFILE}" "${SERVERHOME}/${FIRSTRUNCHECKFILE}"
 	fi
-	echo -e "${INFO}Remember to down the server and adjust DSSettings.txt after creating your game!${NC}"
-	chown steam:steam "${SERVERHOME}/DSSettings.txt"
+	echo -e "${INFO}Remember to down the server and adjust ${FIRSTRUNCHECKFILE} after creating your game!${NC}"
+	chown steam:steam "${SERVERHOME}/${FIRSTRUNCHECKFILE}"
 fi
 
 if [[ "${SKIP_UPDATE}" == "0" ]] || [[ ! -f "${SERVERHOME}/${BINARY}" ]]; then # Only install / update if SKIP_UPDATE is 0 or binary is missing
 		echo -e "${INFO}Updating or installing server files...${NC}"
-        attempt=1
-		until [[ -f "${SERVERHOME}/${BINARY}" ]]; do
-				echo -e "${HILITE}Attempt #${attempt} to install/update server files...${NC}"
-				install_server
-				(( attempt++ ))
-		done
+		if [[ ! -f "${SERVERHOME}/${BINARY}" ]]; then
+			attempt=1
+			until [[ -f "${SERVERHOME}/${BINARY}" ]]; do
+					echo -e "${HILITE}Attempt #${attempt} to install/update server files...${NC}"
+					install_server
+					(( attempt++ ))
+			done
+		else
+			install_server
+		fi
 fi
 
 if [[ "${REMOVE_PDB}" == "1" ]]; then # PDB debug symbol file is >2gb, let's recover that space
@@ -291,7 +290,7 @@ args=()
 [[ "${ENABLE_LOG}" == "1" ]] && args+=("-Log")
 args+=("-port=${GAME_PORT}")
 
-echo -e "${INFO}Launching StarRupture Dedicated Server Binary${NC}"
+echo -e "${INFO}Launching ${GAMENAME} Dedicated Server Binary${NC}"
 gosu steam:steam wine "${SERVERHOME}/${BINARY}" "${args[@]}" 2>&1 &
 # Gets the PID of the last command
 ServerPID=$!

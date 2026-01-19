@@ -153,7 +153,7 @@ If you lost the `*Password.json` password files:
 | FORCE_CHANGE_ADMIN   | Force admin password update (`ADMIN_PASSWORD` required) | "0" |
 | FORCE_CHANGE_PLAYER  | Force player password update (`PLAYER_PASSWORD` required) | "0" |
 | REMOVE_SERVER_FILES  | Wipe server files to recover from update issues | "0" |
-| BACKUP_SETTINGS      | Backup `DSSettings.txt`, `Password.json`, `PlayerPassword.json` and saved games on shutdown | "1" |
+| BACKUP_SETTINGS      | Backup settings and saved games on shutdown | "1" |
 
 ```yml
 services:
@@ -183,6 +183,10 @@ services:
 ```
 
 ## Changelog
+
+* 19 Jan 2026:
+  - Fixed issue with settings backup.
+  - Fixed issue with server updating via steamcmd. 🤦‍♂️
 
 * 18 Jan 2026:
   - Change ownership of backup directory.
