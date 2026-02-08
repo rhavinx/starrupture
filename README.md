@@ -4,10 +4,28 @@
 Docker container for hosting a dedicated server for [StarRupture](https://starrupture-game.com/).
 Currently the game server requires an internet connection.
 
-## 🚨 Important Changes 🚨
+The container has been updated to mitigate a vulnerability in the server manager.
+Accessing the in-game server manager is no longer possible. You will need to create or autoload your save games via `DSSettings.txt`. See [Quick Start](#quick-start-docker) below.
+
+See [https://wiki.starrupture-utilities.com/en/dedicated-server/Vulnerability-Announcement](https://wiki.starrupture-utilities.com/en/dedicated-server/Vulnerability-Announcement)
+
+## ⚠️ DISABLE TCP ON YOUR ROUTER FORWARD RULE FOR THE GAME PORT (default 7777). It must be UDP only ⚠️
+You can use AlienX's [port checker](https://starrupture-utilities.com/port_check/) to confirm that your container is safe.
+
+## 🚨 Important Changes
 If you are an existing user of this container, the way the container works has been changed slightly, and the folder structure has been updated accordingly.
 You might want to rename your existing "data" volume and start the container with a new data volume, down the container and then copy your existing files in to the new structure.
 Please take note of the updates to `docker-compose.yml` so that you can update yours accordingly.
+
+## Container data life cycle
+Initial container start -> "data" volume is empty, new files are created in live "server" volume.
+
+:Loop
+Container shutdown -> Live data is copied to the "data" volume, backup is also created if BACKUP_SETTINGS is 1
+Container start (subsequent launches) -> Files in "data" volume folder is copied to live "server" volume (overwriting existing).
+Goto Loop
+
+If you modify "data" files (Specifically the files mentioned in the Directory Structure diagram below) in the "server" volume, they will be overwritten the next time the server starts.
 
 ## Directory Structure
 ```
@@ -33,25 +51,32 @@ Please take note of the updates to `docker-compose.yml` so that you can update y
     └── Playerpassword.json  # Synced with data folder on container start / shutdown 
 ```
 
-## Quick start (Docker)
+## <a name="quick-start-docker">Quick Start (Docker)</a>
 1. Create a `docker-compose.yml` file from the example below.
 2. Start the container using `docker compose up -d` and then monitor the output using `docker compose logs -f`.
-3. Forward ports on your router/firewall (see `GAME_PORT`).
+3. Forward ports on your router/firewall (see `GAME_PORT`). Forward UDP only.
+4. The initial `DSSettings.txt` is set up to create a new game. If you wish to change the Savegame name from the container default of "MySaveGame", then down the container and modify the new `DSSettings.txt` and bring the container up again.
 
-## In-game setup
-1. Launch StarRupture.
-2. Go to **MANAGE SERVER**:
-   - Enter the server IP:
-     - **WAN/Public IP** for players connecting from the internet
-     - You currently cannot use the LAN ip due to the way the server networking is configured. Hopefully the devs will fix this.
-   - Set the admin password (or set it via `docker-compose.yml`, see below).
-3. Click **New Game** and set a session name  
-   - Note: Do not use spaces in the **Session Name**.
-4. Click **Start Game**.
-5. Press **ESC** back to the main menu → **Join Game**.
-6. Enter the server IP again and the player password (if set).  
-   - Note: the game does not support hostnames yet either.
-7. You can disconnect from the game, down the container and edit DSSettings.txt in the data folder to set the server save file to auto start.
+## In-game setup (Changed as of 8 Feburary container release)
+See [https://wiki.starrupture-utilities.com/en/dedicated-server/configuration](https://wiki.starrupture-utilities.com/en/dedicated-server/configuration)
+
+1. Launch the StarRupture game client.
+2. Join your server with your WAN IP (Your WAN ip should be reported in the container logs, assuming api.ipify.org is not blocked by your network level ad blocking system if you have one, like adguard or pihole)
+3. Press ESC and click the Save button in the menu. This will notify the server to write the save file.
+4. Disconnect from the server.
+5. Down the container, then modify `DSSettings.txt` located in your data volume and change:
+FROM:
+```
+"StartNewGame": "true",
+"LoadSavedGame": "false"
+```
+
+TO:
+```
+"StartNewGame": "false",
+"LoadSavedGame": "true"
+```
+6. Bring up the container and play your game.
 
 ## Admin & player passwords (optional)
 You can set admin and/or player passwords using environment variables in `docker-compose.yml`.
@@ -65,7 +90,8 @@ You can set admin and/or player passwords using environment variables in `docker
   - Set the corresponding `FORCE_CHANGE_ADMIN=1` and/or `FORCE_CHANGE_PLAYER=1`, or delete the corresponding json files.
   - After the files are updated, remove the `ADMIN_PASSWORD` and `PLAYER_PASSWORD` variables, along with the `FORCE_CHANGE_*` variables.
 
-This feature requires internet access (it calls AlienX’s password API at https://starrupture-utilities.com/).
+This feature requires internet access - it calls AlienX’s password API at [https://starrupture-utilities.com/passwords/](https://starrupture-utilities.com/passwords/).
+You can also manually create these files via the above link if you prefer.
 
 ## DSSettings.txt
 This container includes `DSSettings.txt`. Read about it here:
@@ -76,28 +102,20 @@ The file will then be copied back to the `data` volume folder on server shutdown
 
 You can also create the file yourself first in the `data` volume folder, this file will be copied to the container instead of the fresh copy.
 
+The only way to create a new game now is via the `DSSettings.txt`. See the [Quick Start](#quick-start-docker).
+
 The initial contents are as follows:
 ```json
 {
   "SessionName": "MySaveGame",
   "SaveGameInterval": "300",
-  "StartNewGame": "false",
+  "StartNewGame": "true",
   "LoadSavedGame": "false",
   "SaveGameName": "AutoSave0.sav"
 }
 ```
 
-Use the 'MANAGE GAME' option inside the game to create your first game:
-
-  1. Enter your public IP address (The container logs will report your public IP just before launching the server). If the connection is successul, you will be prompted to set a password to use for the Manage Server function. If the connection graphic just spins, check that you are correctly forwarding the port on your router.
-  2. Set a game password if desired using the yellow 'Change Password' button.
-  3. Click "New Game", provide a session name (no spaces), and click the (now yellow) Start Game button. Wait until you get a popup message that says the session is running, then click the OK button. Previously there was a bug where sometimes this popup would not appear.
-  4. Connect to your server via "Join Game" from the main game menu and use your public IP. Hostnames are not supported yet. Select a character, then join the game.
-  5. Once you are in the game, you can disconnect from the server, then down the container. There should now be a saved session in your data volume.
-  6. Edit the DSSettings.txt in the data folder and set it to load your game with the correct session name.
-  7. Up your container again.
-
-#### Updated DSSettings.txt
+#### DSSettings.txt for an existing savegame
 ```json
 {
   "SessionName": "SessionNameYouChose",
@@ -124,7 +142,7 @@ If you pull an updated image and SteamCMD loops downloading/verifying the server
 
 **Option A (recommended):** temporary wipe/reinstall via env var  
 - Set `REMOVE_SERVER_FILES=1` in the `docker-compose.yml` for **one** launch
-- Then set it back to `0` (unless you enjoy reinstalling the server files every time)
+- Then set it back to `0` for the next launch (unless you enjoy reinstalling the server files every time)
 
 Your settings files (`DSSettings.txt`, `Password.json`, `PlayerPassword.json`) and **saves** are backed up into your settings backup folder.
 
@@ -133,8 +151,7 @@ In the `server` folder, delete everything. Existing settings will be copied from
 Start the container again.
 
 If you lost the `*Password.json` password files:
-- Recreate them via **MANAGE SERVER**, or
-- Recreate them using the environment variables `ADMIN_PASSWORD`, `PLAYER_PASSWORD` + `FORCE_CHANGE_*` in `docker-compose.yml`.
+- Recreate them using the environment variables `ADMIN_PASSWORD`, `PLAYER_PASSWORD` + `FORCE_CHANGE_*` in `docker-compose.yml`, or use [https://starrupture-utilities.com/passwords/](https://starrupture-utilities.com/passwords/)
 
 ## Docker Compose (docker-compose.yml)
 
@@ -178,12 +195,16 @@ services:
       # The saves bind mount has been removed. Save files are now copied to the data folder on server shutdown and transferred back on container start.
     ports:
       - "7777:7777/udp"
-      - "7777:7777/tcp"
+      # - "7777:7777/tcp" # Removed to mitigate vulnerability
     restart: unless-stopped
 ```
 
 ## Changelog
 
+* 8 Feb 2026:
+  - Changes to mitigate: https://wiki.starrupture-utilities.com/en/dedicated-server/Vulnerability-Announcement
+  - The in-game server manager is now disabled. All configuration must be done via DSSettings.txt.
+  
 * 19 Jan 2026:
   - Fixed issue with settings backup.
   - Fixed issue with server updating via steamcmd. 🤦‍♂️

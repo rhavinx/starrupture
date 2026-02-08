@@ -21,6 +21,5 @@ RUN mkdir -p ${SERVERHOME} ${GAMEDATA} ${BACKUP} && chmod +x /start.sh && \
 VOLUME [${SERVERHOME}, ${GAMEDATA}]
 
 EXPOSE 7777/udp
-EXPOSE 7777/tcp
 
 ENTRYPOINT [ "/start.sh" ]

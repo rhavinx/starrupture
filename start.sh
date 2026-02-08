@@ -291,6 +291,8 @@ export WINEDEBUG=-all
 args=()
 [[ "${ENABLE_LOG}" == "1" ]] && args+=("-Log")
 args+=("-port=${GAME_PORT}")
+args+=("-RCWebControlDisable")
+args+=("-RCWebInterfaceDisable")
 
 echo -e "${INFO}Launching ${GAMENAME} Dedicated Server Binary${NC}"
 gosu steam:steam wine "${SERVERHOME}/${BINARY}" "${args[@]}" 2>&1 &

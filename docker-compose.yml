@@ -19,5 +19,5 @@ services:
       - /path/to/data:/home/steam/starrupture/data
     ports:
       - "7777:7777/udp"
-      - "7777:7777/tcp"
+      # - "7777:7777/tcp"  # Removed to mitigate vulnerability.
     restart: unless-stopped
