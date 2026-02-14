@@ -12,11 +12,6 @@ See [https://wiki.starrupture-utilities.com/en/dedicated-server/Vulnerability-An
 ## ⚠️ DISABLE TCP ON YOUR ROUTER FORWARD RULE FOR THE GAME PORT (default 7777). It must be UDP only ⚠️
 You can use AlienX's [port checker](https://starrupture-utilities.com/port_check/) to confirm that your container is safe.
 
-## 🚨 Important Changes
-If you are an existing user of this container, the way the container works has been changed slightly, and the folder structure has been updated accordingly.
-You might want to rename your existing "data" volume and start the container with a new data volume, down the container and then copy your existing files in to the new structure.
-Please take note of the updates to `docker-compose.yml` so that you can update yours accordingly.
-
 ## Container data life cycle
 Initial container start -> "data" volume is empty, new files are created in live "server" volume.
 
@@ -57,7 +52,7 @@ If you modify "data" files (Specifically the files mentioned in the Directory St
 3. Forward ports on your router/firewall (see `GAME_PORT`). Forward UDP only.
 4. The initial `DSSettings.txt` is set up to create a new game. If you wish to change the Savegame name from the container default of "MySaveGame", then down the container and modify the new `DSSettings.txt` and bring the container up again.
 
-## In-game setup (Changed as of 8 Feburary container release)
+## In-game setup
 See [https://wiki.starrupture-utilities.com/en/dedicated-server/configuration](https://wiki.starrupture-utilities.com/en/dedicated-server/configuration)
 
 1. Launch the StarRupture game client.
@@ -126,17 +121,6 @@ The initial contents are as follows:
 }
 ```
 
-## Important! 🚨 (volume paths changed)
-Internal container paths for volume mounts changed. Also the local mount for the saved files has changed.
-
-If you were previously mounting paths like:
-- `/starrupture/...`
-
-They must now be:
-- `/home/steam/starrupture/...`
-
-So please update your `docker-compose.yml` accordingly.
-
 ### If SteamCMD gets stuck after updating
 If you pull an updated image and SteamCMD loops downloading/verifying the server files, down the container, then:
 
@@ -189,10 +173,9 @@ services:
       # FORCE_CHANGE_PLAYER: "0"
       # REMOVE_SERVER_FILES: "0"
       # BACKUP_SETTINGS: "1"
-    volumes: # Internal Volume Paths have changed - prefixed with /home/steam
+    volumes:
       - /path/to/server:/home/steam/starrupture/server
       - /path/to/data:/home/steam/starrupture/data
-      # The saves bind mount has been removed. Save files are now copied to the data folder on server shutdown and transferred back on container start.
     ports:
       - "7777:7777/udp"
       # - "7777:7777/tcp" # Removed to mitigate vulnerability
@@ -200,6 +183,8 @@ services:
 ```
 
 ## Changelog
+* 14 Feb 2026:
+  - Remove old warnings from readme and start.sh
 
 * 8 Feb 2026:
   - Changes to mitigate: https://wiki.starrupture-utilities.com/en/dedicated-server/Vulnerability-Announcement

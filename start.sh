@@ -60,14 +60,6 @@ settings=$(cat<<EOF
 
 ${HILITE}Please see the README for this container at: ${README_URL}${NC}
 
-${WARN}!! IMPORTANT !!${NC}
-${WARN}Internal paths have changed for this container. You will need to update your volume binds in your docker-compose.yml as follows:${NC}
-
-volumes:
-      - /path/to/server:${HILITENOE}/home/steam${NC}/starrupture/server
-      - /path/to/data:${HILITENOE}/home/steam${NC}/starrupture/data
-	  ${WARN}# Bind mount for saves is no longer necessary as saves are copied to data folder automatically.${NC}
-
 Container Settings:
 -------------------
  TZ:                      ${INFO}${TZ}${NC}
